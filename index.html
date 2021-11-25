@@ -368,6 +368,19 @@ display:none;
 	width:50%;
 	font-size:1.2em;
 }
+@keyframes chatPath{
+	0%{
+		d:path('M50,25 L25,50 L50,75');
+	}
+	100%{
+		d:path('M50,25 L75,50 L50,75');
+	}
+}
+@media (min-width:700px){
+	body{
+		font-size:30px;
+	}
+}
 </style>
 </head>
 <body>
@@ -384,24 +397,16 @@ display:none;
 			</div-->
 		</div>
 		<div class="roomBtn">
-			<button onclick="alert1.style.display = 'flex';blackLayer.style.display='block';">Create Room</button>
+			<button onclick="alert1.style.display = 'flex';blackLayer.style.display='block';userRoomName.focus();">Create Room</button>
 			<button onclick="joinRoom(selectedRm);">Join Room</button>
 		</div>	
 	</section>
 	<section id="myRoomBox" style="display:none;">
 		<div id="membersBox">
-			<div class="member ready">
+			<!--div class="member ready">
 				<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="/>
 				<div class="content">user1</div>
-			</div>
-			<div class="member unready">
-				<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="/>
-				<div class="content">user2</div>
-			</div>
-			<div class="member">
-				<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="/>
-				<div class="content">user3</div>
-			</div>
+			</div-->
 		</div>
 		<div class="bottomSection">
 			<button onclick="leaveRoom();">leave</buttton>
@@ -409,10 +414,9 @@ display:none;
 		</div>
 	</section>
 	<section id="chatSystem" class="closed">
-		<div id="toggle" onclick="chatSystem.classList.toggle('closed');">
+		<div id="toggle" onclick="chatSystem.classList.toggle('closed');if(chatSystem.className!='closed'){chatPath.style.animation = 'chatPath 200ms linear forwards';}else{chatPath.style.animation = 'chatPath 200ms linear reverse';}">
 			<svg viewBox="0 0 100 100">
-				<path d="M50,25 L25,50 L50,75" stroke="#fff" fill="transparent" stroke-width="8"/>
-	
+				<path id="chatPath" d="M50,25 L25,50 L50,75" stroke="#fff" fill="transparent" stroke-width="8"/>
 			</svg>
 		</div>
 		<div class="modeBox">
@@ -437,13 +441,10 @@ display:none;
 	<canvas id="canvas"></canvas>
 </div>
 <div id="blackLayer" style="display:none;"></div>
-<!--script>function addScr(n,d){var e=document.createElement("script");e.src=n,document.body.appendChild(e),e.onload=function(){d()}}addScr("https://cdn.jsdelivr.net/npm/eruda@2.4.1/eruda.min.js",function(){eruda.init()});</script-->
+<script>function addScr(n,d){var e=document.createElement("script");e.src=n,document.body.appendChild(e),e.onload=function(){d()}}addScr("https://cdn.jsdelivr.net/npm/eruda@2.4.1/eruda.min.js",function(){eruda.init()});</script>
 <script type="text/javascript">
 var url = "ws://192.168.1.127:8001";
-//url = "ws://localhost:8001";
-url = "wss://lid-multigame.glitch.me";
-
-
+//9url = "ws://localhost:8001";
 var ws = new WebSocket(url);
 var myId = "me";
 var selectedRm = -1;
@@ -467,6 +468,8 @@ var userInput = document.getElementById("userInput");
 var sendBtn = document.getElementById("sendBtn");
 var gameBox = document.getElementById("gameBox");
 var lobby = document.getElementById("lobby");
+var membersBox = document.getElementById("membersBox");
+var chatPath = document.getElementById("chatPath");
 
 var xoInfo = {
 	box:{x:0,y:0,size:0},
@@ -485,6 +488,12 @@ function addEvent(i){
 	}
 }
 
+var castlesInfo = {
+	box:{x:0,y:0,width:0,height:0},
+	castles:[],
+	armies:[],
+};
+
 alert1.getData = function(){
 	var userRoomName = document.getElementById("userRoomName");
 	var modesSelect = document.getElementById("modesSelect");
@@ -499,13 +508,12 @@ var temp,tx=0;
 var lastTouchstart=0;
 toggle.addEventListener("touchstart",function(e){
 	lastTouchstart = Date.now();
-	var temp = chatSystem.style.transition;
-	chatSystem.style.transition = "all 10ms linear";
+	temp = chatSystem.style.transition;
+	chatSystem.style.transition = "all 5ms linear";
 });
 toggle.addEventListener("touchmove",function(e){
 	tx = Math.min(e.touches[0].clientX*-1+window.innerWidth,chatSystem.clientWidth);
 	chatSystem.style.right = (tx-chatSystem.clientWidth)+"px";
-	chatSystem.style.transition = temp;
 });
 toggle.addEventListener("touchend",function(e){
 	chatSystem.style.transition = temp;
@@ -529,6 +537,9 @@ toggle.addEventListener("touchcancel",function(e){
 		chatSystem.classList.remove("closed");
 	}
 });
+chatPath.addEventListener("animationend",function(){
+	chatPath.style.animation = "";
+});
 var lastBlurTime;
 userInput.addEventListener("blur",function(){
 	if(oBox=="global"){globalBox.scrollTo(0,globalBox.scrollHeight);}
@@ -538,10 +549,10 @@ userInput.addEventListener("blur",function(){lastBlurTime=Date.now();});
 sendBtn.addEventListener("click",function(){
 	if(userInput.value.length > 0){
 		if(oBox === "global"){
-			sendMsg(ws,"globalMessage",userInput.value);
+			sendMsg("globalMessage",userInput.value);
 		}
 		else if(oBox === "room"){
-			sendMsg(ws,"roomMessage",userInput.value);
+			sendMsg("roomMessage",userInput.value);
 		}
 		userInput.value = "";
 	}
@@ -604,6 +615,7 @@ ws.onmessage = function(msg){
 				}
 				for(var i=rooms.length;i<roomBoxes.length;i++){
 					roomBoxes[i].parentNode.removeChild(roomBoxes[i]);
+					i--;
 				}
 			}else if(msgData.content.type === "yourRoom"){
 				var members = msgData.content.members;
@@ -623,12 +635,12 @@ ws.onmessage = function(msg){
 					}
 					else{
 						var html = '<div class="member '+memberClass+'"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="/><div class="content">'+id+'</div></div>';
-						roomsBox.insertAdjacentHTML("beforeend",html);
-						var roomBox = document.getElementsByClassName("roomBox");
+						membersBox.insertAdjacentHTML("beforeend",html);
 					}
 				}
 				for(var i=msgData.content.maxCapacity;i<memberBoxes.length;i++){
 					memberBoxes[i].parentNode.removeChild(memberBoxes[i]);
+					i--;
 				}
 			}
 			break;
@@ -653,7 +665,10 @@ ws.onmessage = function(msg){
 			myRoomBox.style.display="none";
 			gameBox.style.display = "block";
 			lastGame = msgData.content;
-			xoBoxResize();
+			switch(lastGame){
+				case "Tic Tac Toe":xoBoxResize();break;
+				case "Castles":castlesBoxResize();break;
+			}
 			requestAnimationFrame(animate);
 			break;
 		case "backToRooms":
@@ -675,17 +690,24 @@ ws.onmessage = function(msg){
 			if(scroll){privateBox.scrollTo(0,privateBox.scrollHeight);}
 			break;
 		case "xoInfo":
+			console.log(msgData);
 			for(var i=0;i<msgData.content.gameData.length;i++){
 				xoInfo.gameData[i] = msgData.content.gameData[i];
 			}
 			xoInfo.isClientTurn = msgData.content.isClientTurn;
 			xoInfo.turn = msgData.content.turn;
 			break;
+		case "castlesInfo":
+			castlesInfo.castles = msgData.content.castles;
+			castlesInfo.armies = msgData.content.armies;
+			castlesInfo.myIndex = msgData.content.myIndex;
+			break;
 		default:
 		alert("new: "+msgData.type);
 	}
 	
 }
+var castlesColor = ["red","yellow","#05a","white","lime","cyan","pink","orange"];
 function animate(){
 	switch(lastGame){
 		case "Tic Tac Toe":
@@ -707,7 +729,7 @@ function animate(){
 				ctx.closePath();
 				ctx.stroke();
 			}
-			ctx.font = "30px Arial";
+			ctx.font = (box.width/6)+"px Arial";
 			ctx.textAlign = "center";
 			ctx.textBaseline = "bottom";
 			if(xoInfo.isClientTurn){
@@ -727,7 +749,111 @@ function animate(){
 			}
 			requestAnimationFrame(animate);
 			break;
+		case "Castles":
+			var box = castlesInfo.box;
+			ctx.clearRect(0,0,c.width,c.height);
+		//	ctx.strokeRect(box.x,box.y,box.width,box.height);
+			ctx.save();
+			ctx.translate(box.x,box.y);
+			ctx.strokeStyle = "#aaa";
+			ctx.lineWidth = box.width/15;
+			for(var i=0;i<castlesInfo.castles.length;i++){
+				var castle = castlesInfo.castles[i];
+				for(var j=0;j<castle.nearCastles.length;j++){
+					var nearCastle = castlesInfo.castles[castlesInfo.castles[i].nearCastles[j]];
+					ctx.beginPath();
+					ctx.moveTo(castle.pos.x*box.width,castle.pos.y*box.height);
+					ctx.lineTo(nearCastle.pos.x*box.width,nearCastle.pos.y*box.height);
+					ctx.stroke();
+					ctx.closePath();
+				}
+			}
+			for(var i=0;i<castlesInfo.castles.length;i++){
+				var castle = castlesInfo.castles[i];
+				for(var j=0;j<castle.nearCastles.length;j++){
+					var nearCastle = castlesInfo.castles[castlesInfo.castles[i].nearCastles[j]];
+					var angle = calculateAngle(new Vec2(castle.pos.x,castle.pos.y*1.5),new Vec2(nearCastle.pos.x,nearCastle.pos.y*1.5));
+					var distance = calculateDistance(new Vec2(castle.pos.x,castle.pos.y*1.5),new Vec2(nearCastle.pos.x,nearCastle.pos.y*1.5));
+					ctx.translate(castle.pos.x*box.width,castle.pos.y*box.height);
+					ctx.rotate(angle);
+					ctx.beginPath();
+					ctx.moveTo(0,0);
+					ctx.lineTo((distance/2)*box.width,0);
+					ctx.strokeStyle = castlesColor[castle.player];
+					if(castle.team != -1){
+						ctx.globalAlpha = 0.5;
+						ctx.stroke();
+						ctx.globalAlpha = 1.0;
+					}
+					ctx.closePath();
+					if(castle.player == castlesInfo.myIndex){
+					drawArrow(0.05*box.width,0,0.10*box.width,0,box.width/50,box.width/500,"rgba(255,255,255,0.9)");
+					}
+					ctx.rotate(-angle);
+					ctx.translate(-castle.pos.x*box.width,-castle.pos.y*box.height);
+				}
+			}
+			for(var i=0;i<castlesInfo.armies.length;i++){
+				var army = castlesInfo.armies[i];
+				ctx.beginPath();
+				ctx.arc(army.pos.x*box.width,army.pos.y*box.height,0.1*box.width*(army.value/18),0,2*Math.PI);
+				ctx.fillStyle = castlesColor[army.originCastle.player] || "#888";
+				ctx.fill();
+				ctx.closePath();
+			}
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			for(var i=0;i<castlesInfo.castles.length;i++){
+				var castle = castlesInfo.castles[i];
+				ctx.beginPath();
+				ctx.shadowBlur = box.width/30;
+				ctx.shdowColor = "rgba(0,0,0,1)";
+				drawRegPolygon(castle.pos.x*box.width,castle.pos.y*box.height,0.1*box.width*(castle.value/18),6);
+				ctx.fillStyle = castlesColor[castle.player] || "#888";
+				ctx.fill();
+				ctx.closePath();
+				ctx.shadowBlur = 0;
+				ctx.shdowColor = "rgba(0,0,0,0)";
+				ctx.font = ((box.width/7)*(castle.value/18))+"px Arial";
+				ctx.globalCompositeOperation = "difference";
+				ctx.fillStyle = "#fff";
+				var txt = "";
+				if(castle.team!=-1){txt = (castle.team+1).toString();}
+				ctx.fillText(txt,castle.pos.x*box.width,castle.pos.y*box.height);
+				ctx.globalCompositeOperation = "source-over";
+			}
+			ctx.restore();
+			requestAnimationFrame(animate);
+			break;
 	}
+}
+function drawArrow(fromx, fromy, tox, toy, arrowWidth,headlen, color){
+	var angle = Math.atan2(toy-fromy,tox-fromx);
+	ctx.save();
+	ctx.strokeStyle = color;
+	ctx.beginPath();
+	ctx.moveTo(fromx, fromy);
+	ctx.lineTo(tox, toy);
+	ctx.lineWidth = arrowWidth;
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(tox, toy);
+	ctx.lineTo(tox-headlen*Math.cos(angle-Math.PI/7),toy-headlen*Math.sin(angle-Math.PI/7));
+	ctx.lineTo(tox-headlen*Math.cos(angle+Math.PI/7),toy-headlen*Math.sin(angle+Math.PI/7));
+	ctx.lineTo(tox, toy);
+	ctx.lineTo(tox-headlen*Math.cos(angle-Math.PI/7),toy-headlen*Math.sin(angle-Math.PI/7));
+	ctx.stroke();
+	ctx.restore();
+}
+function calculateAngle(v1,v2){
+	var dx = v2.x - v1.x;
+	var dy = v2.y - v1.y;
+	return Math.atan2(dy,dx);
+}
+function calculateDistance(v1,v2){
+	var dx = v2.x - v1.x;
+	var dy = v2.y - v1.y;
+	return Math.sqrt(dx*dx+dy*dy);
 }
 function xoBoxResize(){
 	xoInfo.box.size = Math.min(window.innerWidth*0.85,window.innerHeight*0.85);
@@ -743,6 +869,19 @@ function xoBoxResize(){
 		xoInfo.rBtns[i].box.height = xoInfo.box.size/3;
 	}
 }
+function castlesBoxResize(){
+	var ar = window.innerWidth/window.innerHeight;
+	var v;
+	if(ar>=0.75){
+		v = {w:window.innerHeight*0.75,h:window.innerHeight};
+	}else{
+		v = {w:window.innerWidth,h:window.innerWidth*1.5};
+	}
+	castlesInfo.box.x = window.innerWidth/2 - v.w/2;
+	castlesInfo.box.y = window.innerHeight/2 - v.h/2;
+	castlesInfo.box.width = v.w;
+	castlesInfo.box.height = v.h;
+}
 function changeCssVar(varName,val){
 	document.documentElement.style.setProperty(varName, val);
 }
@@ -755,20 +894,23 @@ window.addEventListener("resize",function(){
 	changeCssVar("--vh",(window.innerHeight * 0.01)+"px");
 	c.width = window.innerWidth;
 	c.height = window.innerHeight;
-	xoBoxResize();
+	switch(lastGame){
+		case "Tic Tac Toe":xoBoxResize();break;
+		case "Castles":castlesBoxResize();break;
+	}
 });
 function xoPlay(cellIndex){
-	sendMsg(ws,"xoPlay",cellIndex);
+	sendMsg("xoPlay",cellIndex);
 }
 function joinRoom(num){
 	if(selectedRm != -1){
-		sendMsg(ws,"joinRoom",num);
+		sendMsg("joinRoom",num);
 	}else{
 		alert("please select a room first");
 	}
 }
 function leaveRoom(){
-	sendMsg(ws,"leaveRoom");
+	sendMsg("leaveRoom");
 }
 function createRoom(){
 	var userRoomName = document.getElementById("userRoomName");
@@ -778,15 +920,21 @@ function createRoom(){
 		userRoomName.value = "";
 		alert1.style.display = "none";
 		blackLayer.style.display = "none";
-		sendMsg(ws,"createRoom",data);
+		sendMsg("createRoom",data);
 	}else{
 		userRoomName.value = "";
 		userRoomName.className = "red";
 	}
-	
 }
 function changeReady(){
-	sendMsg(ws,"ready");
+	sendMsg("ready");
+}
+function drawRegPolygon(x,y,radius,sides){
+	ctx.beginPath();
+	ctx.moveTo(x + radius * Math.cos(0),y + radius * Math.sin(0));          
+	for(var i=1;i<=sides;i++){
+		ctx.lineTo(x + radius * Math.cos(i * 2 * Math.PI / sides),y + radius * Math.sin(i * 2 * Math.PI / sides));
+	}
 }
 function selectRoom(el){
 	var roomBox = document.getElementsByClassName("roomBox");
@@ -800,7 +948,7 @@ function selectRoom(el){
 		
 	}
 }
-function sendMsg(client,type,content,more){
+function sendMsg(type,content,more){
 	var msg = {
 		type:type,
 		content:content
@@ -808,16 +956,60 @@ function sendMsg(client,type,content,more){
 	for(var el in more){
 		msg[el] = more[el];
 	}
-	client.send(JSON.stringify(msg));
+	ws.send(JSON.stringify(msg));
 }
 c.addEventListener("click",function(e){
 	var click = new Vec2(e.clientX,e.clientY);
-	for(var i=0;i<xoInfo.rBtns.length;i++){
-		if(xoInfo.rBtns[i].checkClick(click)){
-			xoInfo.rBtns[i].onclick(e);
-		}
+	switch(lastGame){
+		case "Tic Tac Toe":
+			for(var i=0;i<xoInfo.rBtns.length;i++){
+				if(xoInfo.rBtns[i].checkClick(click)){
+					xoInfo.rBtns[i].onclick();
+				}
+			}
+			break;
+		case "Castles":
+			castlesClick(click);
+			break;
+		default:alert("new: "+lastGame);
 	}
 });
+function castlesClick(v){
+	var min = undefined;
+	var index = 0;
+	for(var i=0;i<castlesInfo.castles.length;i++){
+		var dx = ((v.x-castlesInfo.box.x)/castlesInfo.box.width) - castlesInfo.castles[i].pos.x;
+		var dy = ((v.y-castlesInfo.box.y)/castlesInfo.box.height)*1.5 - castlesInfo.castles[i].pos.y*1.5;
+		var dis = Math.sqrt(dx*dx+dy*dy);
+		if(min === undefined || min>dis){
+			min = dis;
+			index = i;
+		}
+	}
+	if(min<0.15){
+		var castle = castlesInfo.castles[index];
+		var tdx = ((v.x-castlesInfo.box.x)/castlesInfo.box.width) - castle.pos.x;
+		var tdy = ((v.y-castlesInfo.box.y)/castlesInfo.box.height)*1.5 - castle.pos.y*1.5;
+		var touchAngle = Math.atan2(tdy,tdx);
+		var difAngle = null;
+		var arrayIndex = 0;
+		for(var i=0;i<castlesInfo.castles[index].nearCastles.length;i++){
+			var nearCastle = castlesInfo.castles[castlesInfo.castles[index].nearCastles[i]];
+			var cdx = nearCastle.pos.x - castle.pos.x;
+			var cdy = nearCastle.pos.y*1.5 - castle.pos.y*1.5;
+			var exactAngle = Math.atan2(cdy,cdx);
+			var dif = Math.abs(touchAngle - exactAngle);
+			if(difAngle === null || difAngle>dif){
+				difAngle = dif;
+				arrayIndex = i;
+			}
+		}
+		var destinationIndex = castle.nearCastles[arrayIndex];
+		if(Math.abs(difAngle*180/Math.PI) <= 20){
+			sendMsg("castlesPlay",{originCastle:index,destinationCastle:destinationIndex});
+		}
+	}
+}
 function RBtn(x,y,w,h){
 	this.shape = "rect";
 	this.box = {};
