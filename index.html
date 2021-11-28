@@ -134,7 +134,7 @@ border-left:2px solid #222;
 	transform:translate(-50%,-50%);
 	width:70vw;
 	min-width:200px;
-	max-width:500px;
+	max-width:400px;
 	min-height:120px;
 	display:flex;
 	align-items:space-around;
@@ -345,6 +345,7 @@ display:none;
 	display:flex;
 	align-items:center;
 	justify-content:center;
+	overflow:hidden;
 }
 #membersBox .member.ready{
 	background:radial-gradient(circle,green,darkgreen);
@@ -355,6 +356,24 @@ display:none;
 #membersBox .member.battling{
 	background:radial-gradient(circle,orange,gold);
 }
+#membersBox .member .teamColor{
+	position:absolute;
+	top:0;
+	left:0;
+	width:100%;
+	height:5px;
+	background:transparent;
+}
+#membersBox .member .teamColor.team0{background:rgba(0,0,0,0.2);}
+#membersBox .member .teamColor.team1{background:red;}
+#membersBox .member .teamColor.team2{background:yellow;}
+#membersBox .member .teamColor.team3{background:#05a;}
+#membersBox .member .teamColor.team4{background:#fff;}
+#membersBox .member .teamColor.team5{background:lime;}
+#membersBox .member .teamColor.team6{background:cyan;}
+#membersBox .member .teamColor.team7{background:pink;}
+#membersBox .member .teamColor.team8{background:orange;}
+
 .bottomSection{
 	position:absolute;
 	bottom:0;
@@ -367,6 +386,56 @@ display:none;
 .bottomSection button{
 	width:50%;
 	font-size:1.2em;
+}
+#fullScreenBtn{
+	position:absolute;
+	top:5px;
+	right:5px;
+	width:40px;
+	height:40px;
+	background:rgba(0,0,0,0.5);
+	border-radius:5px;
+}
+#fullScreenBtn svg{
+	width:100%;
+	height:100%;
+}
+#fullScreenBtn:active,
+#fullScreenBtn:hover{
+	background:rgba(0,0,0,0.8);
+}
+#alert2,#prompt{
+	position:absolute;
+	top:50%;
+	left:50%;
+	transform:translate(-50%,-50%);
+	display:flex;
+	flex-direction:column;
+	width:300px;
+	font-size:1.1em;
+	background:#eee;
+	max-height:80%;
+	overflow:hidden;
+	border-radius:10px;
+	z-index:999;
+}
+#alert2 .heading{
+	width:100%;
+	background:#aaa;
+	text-align:center;
+	text-align-last:center;
+}
+#alert2 .content{
+	box-sizing:border-box;
+	padding:15px;
+	font-size:0.8em;
+	margin:10px;
+	text-align:center;
+	text-align-last:center;
+}
+#alert2 button,#prompt button{
+	font-size:1.2em:
+	padding:6px;
 }
 @keyframes chatPath{
 	0%{
@@ -402,6 +471,19 @@ display:none;
 		</div>	
 	</section>
 	<section id="myRoomBox" style="display:none;">
+		<div class="topSection">
+			<select id="userTeam">
+				<option value="-1">none (solo)</option>
+				<option value="0">team 1 (red)</option>
+				<option value="1">team 2 (yellow)</option>
+				<option value="2">team 3 (dark blue)</option>
+				<option value="3">team 4 (white)</option>
+				<option value="4">team 5 (green)</option>
+				<option value="5">team 6 (blue)</option>
+				<option value="6">team 7 (pink)</option>
+				<option value="7">team 8 (orange)</option>
+			</select>
+		</div>
 		<div id="membersBox">
 			<!--div class="member ready">
 				<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="/>
@@ -439,11 +521,24 @@ display:none;
 
 <div id="gameBox" style="display:none">
 	<canvas id="canvas"></canvas>
+	<div id="fullScreenBtn">
+		<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><path d="M6 4h2v1H6a2 2 0 0 0-2 2v2H3V7a3 3 0 0 1 3-3zM4 18a2 2 0 0 0 2 2h2v1H6a3 3 0 0 1-3-3v-2h1v2zM17 4a3 3 0 0 1 3 3v2h-1V7a2 2 0 0 0-2-2h-2V4h2zm3 14a3 3 0 0 1-3 3h-2v-1h2a2 2 0 0 0 2-2v-2h1v2z" fill="#fff"/></svg>
+	</div>
+</div>
+<div id="alert2" style="display:none;">
+	<div class="heading">heading</div>
+	<div class="content">content</div>
+	<button onclick="this.parentNode.style.display = 'none';blackLayer.style.display = 'none';">ok</button>
+</div>
+<div id="prompt" style="display:none;">
+	<p class="question">question</p>
+	<input type="text" class="input">
+	<button onclick="blackLayer.style.display='none';this.parentNode.style.display='none';this.myPromptCallBack(this.parentNode.children[1].value)">ok</button>
 </div>
 <div id="blackLayer" style="display:none;"></div>
 <script>function addScr(n,d){var e=document.createElement("script");e.src=n,document.body.appendChild(e),e.onload=function(){d()}}addScr("https://cdn.jsdelivr.net/npm/eruda@2.4.1/eruda.min.js",function(){eruda.init()});</script>
 <script type="text/javascript">
-url = "wss://lid-multigame.glitch.me";
+var url = "wss://lid-multigame.glitch.me/";
 var ws = new WebSocket(url);
 var myId = "me";
 var selectedRm = -1;
@@ -456,6 +551,7 @@ var roomsBox = document.getElementById("roomsBox");
 var myRoomBox = document.getElementById("myRoomBox");
 var hostRoom = document.getElementById("hostRoom");
 var alert1 = document.getElementById("alert1");
+var alert2 = document.getElementById("alert2");
 var roomAutomation = document.getElementsByClassName("roomAutomation")[0];
 var chatSystem = document.getElementById("chatSystem");
 var toggle = document.getElementById("toggle");
@@ -469,6 +565,13 @@ var gameBox = document.getElementById("gameBox");
 var lobby = document.getElementById("lobby");
 var membersBox = document.getElementById("membersBox");
 var chatPath = document.getElementById("chatPath");
+var fullScreenBtn = document.getElementById("fullScreenBtn");
+var userTeam = document.getElementById("userTeam");
+userTeam.onchange = function(){
+	sendMsg("changeTeam",this.value);
+}
+
+fullScreenBtn.addEventListener("click",toggleFullScreen);
 
 var xoInfo = {
 	box:{x:0,y:0,size:0},
@@ -559,6 +662,22 @@ sendBtn.addEventListener("click",function(){
 		userInput.focus();
 	}
 });
+
+function toggleFullScreen(){
+	if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement){
+		document.documentElement.requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.mozRequestFullscreen || document.documentElement.webkitRequestFullscreen;
+		if(document.documentElement.requestFullscreen){
+			document.documentElement.requestFullscreen();
+		}
+	}
+	else{
+		document.cancelFullScreen = document.cancelFullScreen || document.mozCancelFullScreen || document.webkitCancelFullScreen;
+		if (document.cancelFullScreen) {
+			document.cancelFullScreen();
+		}
+	}
+}
+
 var oBox = "global";
 function openBox(el,str){
 	oBox = str;
@@ -577,7 +696,14 @@ function openBox(el,str){
 
 }
 
-ws.onopen = function(){}
+ws.onopen = function(){
+	var myName = localStorage.getItem("lidMultiGameSavedName") || prompt("enter your name (3-15 characters)");
+	while(!(myName.length >= 3 && myName.length <= 15)){
+		myName = prompt("enter your name (3-15 characters)");
+	}
+	localStorage.setItem("lidMultiGameSavedName",myName);
+	sendMsg("changeName",myName);
+}
 ws.onmessage = function(msg){
 	var msgData = JSON.parse(msg.data);
 	switch(msgData.type){
@@ -588,7 +714,7 @@ ws.onmessage = function(msg){
 			console.log(msgData.content);
 			break;
 		case "alert":
-			alert(msgData.content);
+			myAlert(msgData.content.heading,msgData.content.msg);
 			break;
 		case "games":
 			var modesSelect = document.getElementById("modesSelect");
@@ -622,18 +748,21 @@ ws.onmessage = function(msg){
 				for(var i=0;i<msgData.content.maxCapacity;i++){
 					var memberClass = "unready";
 					var id;
+					var teamClass = "teamColor"
 					if(members[i]){
 						if(members[i].status == 1){memberClass="ready";}
 						else if(members[i].status == 2){memberClass="battling";}
 						id=members[i].id;
+						teamClass = "teamColor team"+(members[i].team+1);
 					}
 					else{memberClass=id="";}
 					if(memberBoxes[i]){
-						memberBoxes[i].children[1].innerHTML = id;
+						memberBoxes[i].children[1].children[0].innerHTML = id;
+						memberBoxes[i].children[1].children[1].className = teamClass;
 						memberBoxes[i].className = "member "+memberClass;
 					}
 					else{
-						var html = '<div class="member '+memberClass+'"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="/><div class="content">'+id+'</div></div>';
+						var html = '<div class="member '+memberClass+'"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="/><div class="content"><p>'+id+'</p><div class="'+teamClass+'"></div></div></div>';
 						membersBox.insertAdjacentHTML("beforeend",html);
 					}
 				}
@@ -689,7 +818,6 @@ ws.onmessage = function(msg){
 			if(scroll){privateBox.scrollTo(0,privateBox.scrollHeight);}
 			break;
 		case "xoInfo":
-			console.log(msgData);
 			for(var i=0;i<msgData.content.gameData.length;i++){
 				xoInfo.gameData[i] = msgData.content.gameData[i];
 			}
@@ -702,12 +830,16 @@ ws.onmessage = function(msg){
 			castlesInfo.myIndex = msgData.content.myIndex;
 			break;
 		default:
-		alert("new: "+msgData.type);
+		myAlert("new: "+msgData.type);
 	}
 	
 }
 var castlesColor = ["red","yellow","#05a","white","lime","cyan","pink","orange"];
-function animate(){
+var lastFrameTime = 0;
+function animate(time){
+	var dt = time - lastFrameTime;
+	lastFrameTime = time;
+	var fps = Math.round(1000/dt);
 	switch(lastGame){
 		case "Tic Tac Toe":
 			var box = xoInfo.box;
@@ -728,7 +860,7 @@ function animate(){
 				ctx.closePath();
 				ctx.stroke();
 			}
-			ctx.font = (box.width/6)+"px Arial";
+			ctx.font = (box.size/10)+"px Arial";
 			ctx.textAlign = "center";
 			ctx.textBaseline = "bottom";
 			if(xoInfo.isClientTurn){
@@ -736,11 +868,12 @@ function animate(){
 			}else{
 				ctx.fillText(xoInfo.turn+"'s turn",window.innerWidth/2,xoInfo.box.y-20);
 			}
+			ctx.font = (box.size/6)+"px Arial";
 			ctx.textBaseline = "middle";
 			for(var i=0;i<xoInfo.gameData.length;i++){
 				var text = xoInfo.gameData[i];
 				if(text === -1){text = "";}
-				else if(text === 0){text = "x";}
+				else if(text === 0){text = "Ã—";}
 				else if(text === 1){text = "o";}
 				var x = i % 3;
 				var y = Math.floor(i / 3);
@@ -796,9 +929,12 @@ function animate(){
 				var army = castlesInfo.armies[i];
 				ctx.beginPath();
 				ctx.arc(army.pos.x*box.width,army.pos.y*box.height,0.1*box.width*(army.value/18),0,2*Math.PI);
-				ctx.fillStyle = castlesColor[army.originCastle.player] || "#888";
+				ctx.fillStyle = castlesColor[army.player] || "#888";
 				ctx.fill();
 				ctx.closePath();
+				var angle = calculateAngle(new Vec2(army.originCastle.pos.x,army.originCastle.pos.y*1.5),new Vec2(army.destinationCastle.pos.x,army.destinationCastle.pos.y*1.5));
+				castlesInfo.armies[i].pos.x += 0.0001*dt*Math.cos(angle);
+				castlesInfo.armies[i].pos.y += 0.0001*dt*Math.sin(angle);
 			}
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";
@@ -855,7 +991,7 @@ function calculateDistance(v1,v2){
 	return Math.sqrt(dx*dx+dy*dy);
 }
 function xoBoxResize(){
-	xoInfo.box.size = Math.min(window.innerWidth*0.85,window.innerHeight*0.85);
+	xoInfo.box.size = Math.min(window.innerWidth*0.85,(window.innerHeight-100)*0.85);
 	xoInfo.box.x = window.innerWidth/2 - xoInfo.box.size/2;
 	xoInfo.box.y = window.innerHeight/2 - xoInfo.box.size/2;
 	xoInfo.lineWidth = xoInfo.box.size*0.05;
@@ -871,8 +1007,8 @@ function xoBoxResize(){
 function castlesBoxResize(){
 	var ar = window.innerWidth/window.innerHeight;
 	var v;
-	if(ar>=0.75){
-		v = {w:window.innerHeight*0.75,h:window.innerHeight};
+	if(ar>=0.666666667){
+		v = {w:window.innerHeight*0.666666667,h:window.innerHeight};
 	}else{
 		v = {w:window.innerWidth,h:window.innerWidth*1.5};
 	}
@@ -905,7 +1041,7 @@ function joinRoom(num){
 	if(selectedRm != -1){
 		sendMsg("joinRoom",num);
 	}else{
-		alert("please select a room first");
+		myAlert("Alert","please select a room first");
 	}
 }
 function leaveRoom(){
@@ -1020,6 +1156,23 @@ function RBtn(x,y,w,h){
 	this.checkClick = function(v){
 		return this.box.x<v.x && this.box.x+this.box.width>v.x && this.box.y<v.y && this.box.y+this.box.height>v.y;
 	}
+}
+function myAlert(heading,text){
+	if(!heading){heading = "Alert";}
+	blackLayer.style.display = "block";
+	alert2.style.display = "flex";
+/*	text = text.split("\"+"n");
+	text = text.join("<br>");*/
+	alert2.children[0].innerHTML = heading;
+	alert2.children[1].innerHTML = text;
+}
+function myPrompt(question,callback,placeholder){
+	var p = document.getElementById("prompt");
+	blackLayer.style.display = "block";
+	p.style.display = "flex";
+	if(!placeholder){placeholder="";}
+	p.children[0].innerHTML = question;
+	p.children[2].myPromptCallback = callback;
 }
 function Vec2(x,y){
 	this.x = x;
