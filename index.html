@@ -932,9 +932,9 @@ function animate(time){
 				ctx.fillStyle = castlesColor[army.player] || "#888";
 				ctx.fill();
 				ctx.closePath();
-				var angle = calculateAngle(new Vec2(army.originCastle.pos.x,army.originCastle.pos.y*1.5),new Vec2(army.destinationCastle.pos.x,army.destinationCastle.pos.y*1.5));
+				/*var angle = calculateAngle(new Vec2(army.originCastle.pos.x,army.originCastle.pos.y*1.5),new Vec2(army.destinationCastle.pos.x,army.destinationCastle.pos.y*1.5));
 				castlesInfo.armies[i].pos.x += 0.0001*dt*Math.cos(angle);
-				castlesInfo.armies[i].pos.y += 0.0001*dt*Math.sin(angle);
+				castlesInfo.armies[i].pos.y += 0.0001*dt*Math.sin(angle);*/
 			}
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";
