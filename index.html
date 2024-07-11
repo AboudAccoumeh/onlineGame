@@ -1340,7 +1340,7 @@ function castlesClick(v){
 			}
 		}
 		var destinationIndex = castle.nearCastles[arrayIndex];
-		if(Math.abs(difAngle*180/Math.PI) <= 20){
+		if(Math.abs(difAngle*180/Math.PI) <= 30){
 			sendMsg("castlesPlay",{originCastle:index,destinationCastle:destinationIndex});
 		}
 	}
