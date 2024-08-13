@@ -655,6 +655,15 @@ var chessInfo = {
 	chessClasses:["ChessKing","ChessQueen","ChessRook","ChessBishop","ChessKnight","ChessPawn"]
 
 };
+var connect4Info = {
+	box:{x:0,y:0,width:0,height:0},
+	cols:8,
+	rows:6,
+	gameData:[],
+	lineWidth:0,
+	isClientTurn:false,
+	turn:"",
+};
 
 	function svgToImg(svg,callback,error){
 		var svg64;
@@ -896,6 +905,7 @@ ws.onmessage = function(msg){
 				case "Tic Tac Toe":xoBoxResize();break;
 				case "Castles":castlesBoxResize();break;
 				case "Chess":chessBoxResize();break;
+				case "Connect 4":connect4BoxResize();break;
 			}
 			requestAnimationFrame(animate);
 			break;
@@ -955,8 +965,15 @@ ws.onmessage = function(msg){
 			chessInfo.shadowsPos = [];
 			chessInfo.kingChecked = chessInfo.boardInstance.isKingChecked(chessInfo.board.turn);
 			break;
+		case "connect4Info":
+			for(var i=0;i<msgData.content.gameData.length;i++){
+				connect4Info.gameData[i] = msgData.content.gameData[i];
+			}
+			connect4Info.isClientTurn = msgData.content.isClientTurn;
+			connect4Info.turn = msgData.content.turn;
+			break;
 		default:
-		myAlert("new: "+msgData.type);
+		myAlert("onmessage new: "+msgData.type);
 	}
 	
 }
@@ -1154,6 +1171,57 @@ function animate(time){
 			ctx.restore();
 			requestAnimationFrame(animate);
 			break;
+		case "Connect 4":
+			var box = connect4Info.box;
+			var cols = connect4Info.cols;
+			var rows = connect4Info.rows;
+			var cellWidth = box.width / cols;
+			var cellHeight = box.height / rows;
+
+			ctx.clearRect(0, 0, c.width, c.height);
+
+			ctx.strokeStyle = "#fff";
+			ctx.lineWidth = connect4Info.lineWidth;
+			ctx.lineJoin = ctx.lineCap = "round";
+			for (var i = 0; i <= cols; i++) {
+				ctx.beginPath();
+				ctx.moveTo(box.x + i * cellWidth, box.y);
+				ctx.lineTo(box.x + i * cellWidth, box.y + box.height);
+				ctx.stroke();
+			}
+			for (var j = 0; j <= rows; j++) {
+				ctx.beginPath();
+				ctx.moveTo(box.x, box.y + j * cellHeight);
+				ctx.lineTo(box.x + box.width, box.y + j * cellHeight);
+				ctx.stroke();
+			}
+			ctx.closePath();
+			for (var i = 0; i < connect4Info.gameData.length; i++) {
+				var piece = connect4Info.gameData[i];
+				if (piece !== -1) {
+					var col = i % cols;
+					var row = Math.floor(i / cols);
+					var x = box.x + col * cellWidth + cellWidth / 2;
+					var y = box.y + (row + 1) * cellHeight - cellHeight / 2;
+					ctx.beginPath();
+					ctx.arc(x, y, Math.min(cellWidth, cellHeight) / 2 - 5, 0, Math.PI * 2);
+					ctx.fillStyle = piece === 0 ? 'red' : 'yellow';
+					ctx.fill();
+					ctx.strokeStyle = '#000';
+					ctx.lineWidth = 2;
+					ctx.stroke();
+				}
+			}
+			ctx.font = "16px Arial";
+			ctx.textAlign = "center";
+			ctx.textBaseline = "bottom";
+			if (connect4Info.isClientTurn) {
+				ctx.fillText("Your Turn", window.innerWidth / 2, box.y - 20);
+			} else {
+				ctx.fillText(connect4Info.turn + "'s Turn", window.innerWidth / 2, box.y - 20);
+			}
+			requestAnimationFrame(animate);
+			break;
 	}
 }
 function drawArrow(fromx, fromy, tox, toy, arrowWidth,headlen, color){
@@ -1209,6 +1277,24 @@ function chessBoxResize(){
 	chessInfo.box.y = window.innerHeight*0.5-size*0.5;
 	chessInfo.box.width = chessInfo.box.height = size;
 }
+function connect4BoxResize() {
+    var aspectRatio = window.innerWidth / window.innerHeight;
+    var maxWidth, maxHeight;
+
+    if (aspectRatio >= (connect4Info.cols / connect4Info.rows)) {
+        maxHeight = window.innerHeight * 0.85;
+        maxWidth = maxHeight * (connect4Info.cols / connect4Info.rows);
+    } else {
+        maxWidth = window.innerWidth * 0.85;
+        maxHeight = maxWidth * (connect4Info.rows / connect4Info.cols);
+    }
+    connect4Info.box.width = maxWidth;
+    connect4Info.box.height = maxHeight;
+    connect4Info.box.x = (window.innerWidth - maxWidth) / 2;
+    connect4Info.box.y = (window.innerHeight - maxHeight) / 2;
+    connect4Info.lineWidth = Math.max(1, maxWidth * 0.02);
+}
+
 function changeCssVar(varName,val){
 	document.documentElement.style.setProperty(varName, val);
 }
@@ -1225,6 +1311,7 @@ window.addEventListener("resize",function(){
 		case "Tic Tac Toe":xoBoxResize();break;
 		case "Castles":castlesBoxResize();break;
 		case "Chess":chessBoxResize();break;
+		case "Connect 4":connect4BoxResize();break;
 	}
 });
 function xoPlay(cellIndex){
@@ -1298,7 +1385,10 @@ c.addEventListener("click",function(e){
 		case "Chess":
 			chessClick(click);
 			break;
-		default:alert("new: "+lastGame);
+		case "Connect 4":
+			connect4Click(click);
+			break;
+		default:alert("onclick new: "+lastGame);
 	}
 });
 function xoClick(v){
@@ -1340,7 +1430,7 @@ function castlesClick(v){
 			}
 		}
 		var destinationIndex = castle.nearCastles[arrayIndex];
-		if(Math.abs(difAngle*180/Math.PI) <= 30){
+		if(Math.abs(difAngle*180/Math.PI) <= 20){
 			sendMsg("castlesPlay",{originCastle:index,destinationCastle:destinationIndex});
 		}
 	}
@@ -1396,6 +1486,23 @@ function chessClick(v){
 }
 function chessPlay(a,b){
 	sendMsg("chessPlay",{oldPos:a,newPos:b});
+}
+function connect4Click(v) {
+	var cellWidth = connect4Info.box.width / connect4Info.cols;
+	var col = Math.floor((v.x - connect4Info.box.x) / cellWidth);
+	if (col >= 0 && col < connect4Info.cols) {
+		for (var row = connect4Info.rows - 1; row >= 0; row--) {
+			var index = row * connect4Info.cols + col;
+			if (connect4Info.gameData[index] === -1) {
+				connect4Play(index);
+				break;
+			}
+		}
+	}
+}
+
+function connect4Play(cellIndex){
+	sendMsg("connect4Play",{cellIndex});
 }
 function myAlert(heading,text){
 	if(!heading){heading = "Alert";}
